@@ -2,7 +2,7 @@
 import uvm_pkg::*;
 
 // Forward typedef for the context class, which is our main FSM class.
-class base_class;
+class fsm_model;
 
 //---------------------------------------------------------------
 // State class
@@ -21,7 +21,7 @@ class state_class extends uvm_object;
 
   // This virtual task defines the action of a state. It must be
   // implemented by each concrete state.
-  virtual task do_action(base_class ctx);
+  virtual task do_action(fsm_model ctx);
     `uvm_fatal("STATE_CLASS", "do_action must be overridden in a concrete state")
   endtask
 
@@ -32,12 +32,12 @@ endclass
 //---------------------------------------------------------------
 // This class holds the FSM logic and the current state.
 // It's a uvm_component so it can participate in the UVM phasing.
-class base_class extends uvm_component;
+class fsm_model extends uvm_component;
 
   // Handle to the current state object
   state_class state_cls;
 
-  `uvm_component_utils(base_class)
+  `uvm_component_utils(fsm_model)
 
   function new(string name, uvm_component parent);
     super.new(name, parent);
@@ -90,7 +90,7 @@ class init_state extends state_class;
     super.new(name);
   endfunction
 
-  virtual task do_action(base_class ctx);
+  virtual task do_action(fsm_model ctx);
     `uvm_info(get_type_name(), "Executing init state.", UVM_MEDIUM);
     #10;
     ctx.set_fsm_state("idle_state", get_type_name());
@@ -105,7 +105,7 @@ class idle_state extends state_class;
     super.new(name);
   endfunction
 
-  virtual task do_action(base_class ctx);
+  virtual task do_action(fsm_model ctx);
     `uvm_info(get_type_name(), "Executing idle state, waiting...", UVM_MEDIUM);
     #20;
     // Randomly transition to one of two states
@@ -125,7 +125,7 @@ class proc_state_a extends state_class;
     super.new(name);
   endfunction
 
-  virtual task do_action(base_class ctx);
+  virtual task do_action(fsm_model ctx);
     `uvm_info(get_type_name(), "Executing processing state A.", UVM_MEDIUM);
     #10;
     ctx.set_fsm_state("idle_state", get_type_name());
@@ -140,7 +140,7 @@ class proc_state_b extends state_class;
     super.new(name);
   endfunction
 
-  virtual task do_action(base_class ctx);
+  virtual task do_action(fsm_model ctx);
     `uvm_info(get_type_name(), "Executing processing state B.", UVM_MEDIUM);
     #10;
     ctx.set_fsm_state("end_state", get_type_name());
@@ -155,7 +155,7 @@ class end_state extends state_class;
     super.new(name);
   endfunction
 
-  virtual task do_action(base_class ctx);
+  virtual task do_action(fsm_model ctx);
     `uvm_info(get_type_name(), "Executing end state. Simulation will finish.", UVM_MEDIUM);
     #50;
     uvm_root::get().stop_request();
@@ -170,7 +170,7 @@ endclass
 class fsm_test extends uvm_test;
   `uvm_component_utils(fsm_test)
 
-  base_class fsm;
+  fsm_model fsm;
 
   function new(string name = "fsm_test", uvm_component parent = null);
     super.new(name, parent);
@@ -186,7 +186,7 @@ class fsm_test extends uvm_test;
     proc_state_b::type_id::create("proc_state_b", this);
     end_state::type_id::create("end_state", this);
 
-    fsm = base_class::type_id::create("fsm", this);
+    fsm = fsm_model::type_id::create("fsm", this);
   endfunction
 
   task run_phase(uvm_phase phase);
