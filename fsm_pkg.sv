@@ -455,8 +455,9 @@ module top;
     bit clk;
     always #5ns clk = ~clk;
 
+    fsm_if vif(clk);
+
     initial begin
-        fsm_if vif(clk);
         uvm_config_db#(virtual fsm_if)::set(null, "uvm_test_top.env.agent*", "vif", vif);
         run_test("base_test");
     end

@@ -298,3 +298,43 @@ The provided solution is beneficial for both the active (generation) and passive
 
 To summarize, while the direct "UVM sample code" for a complete testbench is not provided, the sources furnish the essential SystemVerilog building blocks for the FSM reference model using robust design patterns, along with clear conceptual guidance on how these models, sequences, checkers, and functional coverage elements are integrated into a UVM verification flow.
 
+### Alternative: Tightly Coupled FSM using State Design Pattern
+
+While the loosely coupled approach using a Mediator is highly scalable, an alternative is to place the transition logic directly inside each concrete state class. This creates a "tightly coupled" system where each state must have knowledge of the other states it can transition to.
+
+In this design, the `StateTransitionUtil` class is removed. Instead, the abstract `State` class would define a new pure virtual function, for example `calculateNextState`, which each concrete state must implement.
+
+```systemverilog
+// In a tightly coupled design, the RunState would look like this:
+class RunState extends State;
+    // ... singleton pattern ...
+
+    // --- TIGHTLY COUPLED TRANSITION LOGIC ---
+    virtual function State calculateNextState(fsm_item inputs);
+        if (inputs.cmd == fsm_item::CMD_STOP)
+            return IdleState::Instance(); // Knows about IdleState
+        else if (inputs.cmd == fsm_item::CMD_RESET)
+            return InitState::Instance(); // Knows about InitState
+        return this; // Default: stay in current state
+    endfunction
+
+    // ... other methods ...
+endclass
+```
+
+This approach encapsulates all behavior and logic for a single state within its class, which can be simpler for smaller FSMs. However, it is less maintainable as the FSM grows in complexity, because adding or changing transitions may require modifying multiple state classes.
+
+*An executable example of this pattern can be found in `strict_fsm.sv`.*
+
+### Comparison: Loosely vs. Tightly Coupled FSM Design
+
+| Feature                  | Loosely Coupled (with Mediator)                                  | Tightly Coupled (Transitions in State)                               |
+| ------------------------ | ---------------------------------------------------------------- | -------------------------------------------------------------------- |
+| **Primary Pattern**      | State Pattern + Mediator Pattern                                 | State Pattern                                                        |
+| **Transition Logic**     | Centralized in a single `StateTransitionUtil` class.             | Distributed within each concrete `State` class.                      |
+| **Coupling**             | **Low.** State classes do not know about each other.             | **High.** State classes have direct dependencies on other states.    |
+| **Scalability**          | **High.** Adding a new state involves creating one new class and updating only the central mediator. Existing states are untouched. | **Low.** Adding a state that can be transitioned from multiple other states requires modifying all those other state classes. |
+| **Maintainability**      | **High.** Transition logic is in one predictable place.          | **Low.** A change to the FSM's flow might require finding and editing multiple files. |
+| **Readability**          | Logic for one state is split between its class and the mediator. | All logic for a state (actions and transitions) is in one class.     |
+| **Best For**             | Complex, large, or evolving FSMs where scalability is key.       | Simple, stable FSMs where encapsulation within a single class is desired. |
+
